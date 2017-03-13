@@ -1,0 +1,194 @@
+package org.compi2.codigo3d.parser;
+
+import java_cup.runtime.Symbol;
+
+//PARSER PARA EL ARCHIVO DE ESCENARIOS
+parser code
+{://Codigo visible
+
+    public void syntax_error(Symbol s){
+        System.err.println(s);
+    }
+
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception{ 
+        System.err.println("T.T");
+        System.err.println(s);
+    }
+
+:}
+
+action code
+{://Codigo de acciones
+      
+:}
+
+terminal String ID, ENTERO, DECIMAL;
+terminal TokenC3D MAS, MENOS, MULT, DIV, POT, PAR_IZQ, PAR_DER;
+terminal TokenC3D MAYOR, MENOR, MAYORIGUAL, MENORIGUAL, IGUAL, DIFERENTE;
+terminal TokenC3D OR, AND, NOT;
+nonterminal NodoC3D inicial, expresion,expresionREL,expresionLOG;
+
+
+precedence left MAS, MENOS;
+precedence left MULT, DIV; 
+precedence right POT; 
+
+precedence left IGUAL, DIFERENTE;
+precedence left MAYOR, MENOR, MAYORIGUAL, MENORIGUAL;
+
+precedence left OR; 
+precedence left AND; 
+
+start with inicial;
+
+inicial     ::= {: ControlC3D.reiniciar(); :} expresionLOG:exp 
+                    {: 
+                        RESULT = exp;
+                         ControlC3D.agregarC3D("\n Ev: " + exp.getEv() + "\n");
+                         ControlC3D.agregarC3D("Ef: " + exp.getEf()+ "\n");
+                    :};
+
+expresionLOG ::= expresionLOG:izq OR {:  String c3d = izq.getEf() + " : " + "\n";
+                                         ControlC3D.agregarC3D(c3d);
+                                    :} expresionLOG:der
+                    {: 
+                        String Ef = der.getEf();
+                        String Ev = izq.getEv() + "," +der.getEv();
+                        RESULT = new NodoC3D(Ev,Ef); 
+                    :}
+            |   expresionLOG:izq AND {:  String c3d = izq.getEv() + " : " + "\n";
+                                         ControlC3D.agregarC3D(c3d);
+                                    :} expresionLOG:der
+                    {: 
+                        String Ev = der.getEv();
+                        String Ef = izq.getEf() + "," +der.getEf();
+                        RESULT = new NodoC3D(Ev,Ef); 
+                    :}
+            |   NOT expresionLOG:exp 
+                    {: 
+                        String Ev = exp.getEf();
+                        String Ef = exp.getEv();
+                        RESULT = new NodoC3D(Ev,Ef); 
+                    :}
+
+             |    expresionREL:exp 
+                    {: 
+                        String Ev = exp.getEv();
+                        String Ef = exp.getEf();
+                        RESULT = new NodoC3D(Ev,Ef); 
+                    :}
+            ;
+
+expresionREL ::= expresionREL:izq MAYOR expresionREL:der
+                    {: 
+                        String Ev = ControlC3D.generaEtiq();
+                        String Ef = ControlC3D.generaEtiq();
+                        String c3d = " if " + izq.getCad() + " > " + der.getCad() + " goto "+ Ev +";\n goto "+Ef + ";\n";
+                        ControlC3D.agregarC3D(c3d);
+                        RESULT = new NodoC3D(Ev,Ef); 
+                    :}
+                 
+             |  expresionREL:izq MENOR expresionREL:der
+                    {: 
+                        String Ev = ControlC3D.generaEtiq();
+                        String Ef = ControlC3D.generaEtiq();
+                        String c3d = " if " + izq.getCad() + " < " + der.getCad() + " goto "+ Ev +";\n goto "+Ef + ";\n";
+                        ControlC3D.agregarC3D(c3d);
+                        RESULT = new NodoC3D(Ev,Ef); 
+                    :}
+
+             |  expresionREL:izq MAYORIGUAL expresionREL:der
+                    {: 
+                        String Ev = ControlC3D.generaEtiq();
+                        String Ef = ControlC3D.generaEtiq();
+                        String c3d = " if " + izq.getCad() + " >= " + der.getCad() + " goto "+ Ev +";\n goto "+Ef + ";\n";
+                        ControlC3D.agregarC3D(c3d);
+                        RESULT = new NodoC3D(Ev,Ef); 
+                    :}
+
+             |  expresionREL:izq MENORIGUAL expresionREL:der
+                    {: 
+                        String Ev = ControlC3D.generaEtiq();
+                        String Ef = ControlC3D.generaEtiq();
+                        String c3d = " if " + izq.getCad() + " <= " + der.getCad() + " goto "+ Ev +";\n goto "+Ef + ";\n";
+                        ControlC3D.agregarC3D(c3d);
+                        RESULT = new NodoC3D(Ev,Ef); 
+                    :}
+
+             |  expresionREL:izq IGUAL expresionREL:der
+                    {: 
+                        String Ev = ControlC3D.generaEtiq();
+                        String Ef = ControlC3D.generaEtiq();
+                        String c3d = " if " + izq.getCad() + " == " + der.getCad() + " goto "+ Ev +";\n goto "+Ef + ";\n";
+                        ControlC3D.agregarC3D(c3d);
+                        RESULT = new NodoC3D(Ev,Ef); 
+                    :}
+
+             |  expresionREL:izq DIFERENTE expresionREL:der
+                    {: 
+                        String Ev = ControlC3D.generaEtiq();
+                        String Ef = ControlC3D.generaEtiq();
+                        String c3d = " if " + izq.getCad() + " != " + der.getCad() + " goto "+ Ev +";\n goto "+Ef + ";\n";
+                        ControlC3D.agregarC3D(c3d);
+                        RESULT = new NodoC3D(Ev,Ef); 
+                    :}
+
+            |    expresion:exp 
+                    {: 
+                        String temp = exp.getCad();
+                        RESULT = new NodoC3D(temp); 
+                    :}
+            ;
+
+
+expresion   ::= expresion:izq MAS expresion:der
+                    {: 
+                        String temp = ControlC3D.generaTemp();
+                        String c3d = temp + " = " + izq.getCad() + " + " + der.getCad() + ";\n";
+                        ControlC3D.agregarC3D(c3d);
+                        RESULT = new NodoC3D(temp); 
+                    :}
+            |   expresion:izq MENOS expresion:der
+                    {: 
+                        String temp = ControlC3D.generaTemp();
+                        String c3d = temp + " = " + izq.getCad() + " - " + der.getCad() + ";\n";
+                        ControlC3D.agregarC3D(c3d);
+                        RESULT = new NodoC3D(temp); 
+                    :}
+            |   expresion:izq MULT expresion:der
+                    {: 
+                        String temp = ControlC3D.generaTemp();
+                        String c3d = temp + " = " + izq.getCad() + " * " + der.getCad() + ";\n";
+                        ControlC3D.agregarC3D(c3d);
+                        RESULT = new NodoC3D(temp); 
+                    :}
+            |   expresion:izq DIV expresion:der
+                    {: 
+                        String temp = ControlC3D.generaTemp();
+                        String c3d = temp + " = " + izq.getCad() + " / " + der.getCad() + ";\n";
+                        ControlC3D.agregarC3D(c3d);
+                        RESULT = new NodoC3D(temp); 
+                    :}
+            |   expresion:izq POT expresion:der
+                    {: 
+                        String temp = ControlC3D.generaTemp();
+                        String c3d = temp + " = " + izq.getCad() + " ^ " + der.getCad() + ";\n";
+                        ControlC3D.agregarC3D(c3d);
+                        RESULT = new NodoC3D(temp); 
+                    :}
+            |   MENOS expresion:exp 
+                    {: 
+                        String temp = ControlC3D.generaTemp();
+                        String c3d = temp + " = - " + exp.getCad() + ";\n";
+                        ControlC3D.agregarC3D(c3d);
+                        RESULT = new NodoC3D(temp); 
+                    :}
+            |   PAR_IZQ expresion:exp PAR_DER   
+                    {: RESULT = exp; :}
+            |   ID:id           
+                    {: RESULT = new NodoC3D(id); :}
+            |   ENTERO:entero   
+                    {: RESULT = new NodoC3D(entero); :}
+            |   DECIMAL:decimal 
+                    {: RESULT = new NodoC3D(decimal); :}
+            ;
